@@ -23,7 +23,8 @@ type Config struct {
 	SessionCookie string
 	Subdomain     string
 	OutputDir     string
-	LocationISO   string // Added for location filtering
+	LocationISO   string
+	StatusFilter  string
 }
 
 // Map for ISO codes to international phone prefixes
@@ -31,6 +32,13 @@ var countryPrefixes = map[string][]string{
 	"US": {"+1", "001"},
 	"GB": {"+44", "0044"},
 	"CZ": {"+420", "00420"},
+}
+
+// Hardcoded map of Status Names to BambooHR Status IDs
+// Keys MUST be completely lowercase for the case-insensitive lookup to work
+var statusMap = map[string]string{
+	"new":       "1",
+	"not a fit": "4",
 }
 
 // Candidate represents a normalized applicant
@@ -44,6 +52,7 @@ type Candidate struct {
 	PositionID     string
 	PositionName   string
 	Phone          string
+	StatusID       string // Storing the raw ID for comparison
 }
 
 // Role represents a unique job position
@@ -99,12 +108,17 @@ func (bc *BambooClient) FetchAllCandidates() ([]Candidate, error) {
 	if !strings.HasPrefix(strings.TrimSpace(jsonStr), "{") {
 		return nil, errors.New("received non-JSON response. Your session cookie may be expired or invalid")
 	}
+
 	ids := gjson.Get(jsonStr, "data.applicationsOrder")
 	for _, id := range ids.Array() {
 		appID := id.String()
 		appPath := fmt.Sprintf("data.applications.%s", appID)
 		candidateID := gjson.Get(jsonStr, appPath+".candidateId").String()
 		jobID := gjson.Get(jsonStr, appPath+".jobOpeningId").String()
+
+		// Grab the raw numeric ID directly
+		statusID := gjson.Get(jsonStr, appPath+".applicationStatusId").String()
+
 		candidates = append(candidates, Candidate{
 			ApplicantID:    appID,
 			FirstName:      gjson.Get(jsonStr, fmt.Sprintf("data.candidates.%s.firstName", candidateID)).String(),
@@ -115,6 +129,7 @@ func (bc *BambooClient) FetchAllCandidates() ([]Candidate, error) {
 			PositionID:     jobID,
 			PositionName:   gjson.Get(jsonStr, fmt.Sprintf("data.jobOpenings.%s.name", jobID)).String(),
 			Phone:          gjson.Get(jsonStr, fmt.Sprintf("data.candidates.%s.phone", candidateID)).String(),
+			StatusID:       statusID,
 		})
 	}
 	return candidates, nil
@@ -184,7 +199,6 @@ func isTargetLocation(phone string, allowedISO string) bool {
 			}
 		}
 
-		// Local US number check (10 digits, no prefix)
 		if iso == "US" && len(cp) == 10 && !strings.HasPrefix(cp, "+") {
 			return true
 		}
@@ -229,26 +243,28 @@ func InteractiveRolePicker(candidates []Candidate) []string {
 }
 
 func main() {
-	// Custom Help Output
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "BambooHR Resume Downloader\n\n")
-		fmt.Fprintf(os.Stderr, "Usage: ./bamboo -c <cookie> -s <subdomain> -l <US|GB|CZ|all> [options]\n\n")
+		fmt.Fprintf(os.Stderr, "BambooHR Resume Downloader (SSO/MFA Compatible)\n\n")
+		fmt.Fprintf(os.Stderr, "Usage: ./bamboo -c <cookie> -s <subdomain> [options]\n\n")
 		fmt.Fprintf(os.Stderr, "Required Flags:\n")
-		fmt.Fprintf(os.Stderr, "  -c string     Your PHPSESSID cookie value (get from your Browser session).\n")
-		fmt.Fprintf(os.Stderr, "  -s string     Your BambooHR subdomain.\n")
+		fmt.Fprintf(os.Stderr, "  -c string       Your PHPSESSID cookie value.\n")
+		fmt.Fprintf(os.Stderr, "  -s string       Your BambooHR subdomain.\n\n")
 		fmt.Fprintf(os.Stderr, "Options:\n")
-		fmt.Fprintf(os.Stderr, "  -d string     Output directory (default './BambooResumes')\n")
-		fmt.Fprintf(os.Stderr, "  -roles string Comma-separated Position IDs (skips interactive menu)\n\n")
+		fmt.Fprintf(os.Stderr, "  -l string       ISO Country Codes (e.g., 'US,CZ') or 'all' (default 'all')\n")
+		fmt.Fprintf(os.Stderr, "  -status string  Candidate status to filter by (e.g. 'New', 'Not a Fit') or 'all' (default 'all')\n")
+		fmt.Fprintf(os.Stderr, "  -d string       Output directory (default './BambooResumes')\n")
+		fmt.Fprintf(os.Stderr, "  -roles string   Comma-separated Position IDs (skips interactive menu)\n\n")
 	}
 
 	cookieFlag := flag.String("c", "", "PHPSESSID Cookie")
 	rolesFlag := flag.String("roles", "", "Position IDs")
 	sd := flag.String("s", "", "Subdomain")
-	locFlag := flag.String("l", "", "Location ISO codes")
+	locFlag := flag.String("l", "all", "Location ISO codes")
+	statusFlag := flag.String("status", "all", "Candidate status filter")
 	outDir := flag.String("d", "./BambooResumes", "Output directory")
 	flag.Parse()
 
-	if *sd == "" || *locFlag == "" || (*cookieFlag == "" && os.Getenv("BAMBOO_SESSION_COOKIE") == "") {
+	if *sd == "" || (*cookieFlag == "" && os.Getenv("BAMBOO_SESSION_COOKIE") == "") {
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -268,6 +284,7 @@ func main() {
 		Subdomain:     *sd,
 		OutputDir:     absDir,
 		LocationISO:   *locFlag,
+		StatusFilter:  *statusFlag,
 	})
 
 	candidates, err := client.FetchAllCandidates()
@@ -286,22 +303,45 @@ func main() {
 
 	var shortlisted []Candidate
 	for _, c := range candidates {
-		match := false
+		// 1. Role Filter
+		roleMatch := false
 		if len(targetRoles) == 0 {
-			match = true
-		}
-		for _, tr := range targetRoles {
-			if c.PositionID == tr {
-				match = true
-				break
+			roleMatch = true
+		} else {
+			for _, tr := range targetRoles {
+				if c.PositionID == tr {
+					roleMatch = true
+					break
+				}
 			}
 		}
-		if match && isTargetLocation(c.Phone, client.config.LocationISO) {
+
+		// 2. Status Filter
+		statusMatch := false
+		filterInput := strings.ToLower(strings.TrimSpace(client.config.StatusFilter))
+
+		if filterInput == "all" {
+			statusMatch = true
+		} else {
+			// Check if they typed a string we have mapped (like "new")
+			expectedID, exists := statusMap[filterInput]
+			if exists {
+				statusMatch = (c.StatusID == expectedID)
+			} else {
+				// Fallback: If it's an unmapped string, or they just typed the raw ID (like "-status 1")
+				statusMatch = (c.StatusID == filterInput)
+			}
+		}
+
+		// 3. Location Filter
+		locMatch := isTargetLocation(c.Phone, client.config.LocationISO)
+
+		if roleMatch && locMatch && statusMatch {
 			shortlisted = append(shortlisted, c)
 		}
 	}
 
-	fmt.Printf("\nFound %d valid candidates matching filters. Downloading...\n", len(shortlisted))
+	fmt.Printf("\nFound %d valid candidates matching filters (Location: %s, Status: %s). Downloading...\n", len(shortlisted), client.config.LocationISO, client.config.StatusFilter)
 	downloaded := 0
 	for _, c := range shortlisted {
 		if err := client.DownloadResume(c); err == nil {
