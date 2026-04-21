@@ -231,12 +231,11 @@ func InteractiveRolePicker(candidates []Candidate) []string {
 func main() {
 	// Custom Help Output
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "BambooHR Resume Downloader (SSO/MFA Compatible)\n\n")
+		fmt.Fprintf(os.Stderr, "BambooHR Resume Downloader\n\n")
 		fmt.Fprintf(os.Stderr, "Usage: ./bamboo -c <cookie> -s <subdomain> -l <US|GB|CZ|all> [options]\n\n")
 		fmt.Fprintf(os.Stderr, "Required Flags:\n")
-		fmt.Fprintf(os.Stderr, "  -c string     Your PHPSESSID cookie value.\n")
+		fmt.Fprintf(os.Stderr, "  -c string     Your PHPSESSID cookie value (get from your Browser session).\n")
 		fmt.Fprintf(os.Stderr, "  -s string     Your BambooHR subdomain.\n")
-		fmt.Fprintf(os.Stderr, "  -l string     ISO Country Codes (e.g., 'US,CZ') or 'all'.\n\n")
 		fmt.Fprintf(os.Stderr, "Options:\n")
 		fmt.Fprintf(os.Stderr, "  -d string     Output directory (default './BambooResumes')\n")
 		fmt.Fprintf(os.Stderr, "  -roles string Comma-separated Position IDs (skips interactive menu)\n\n")
