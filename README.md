@@ -19,16 +19,16 @@ Because BambooHR's standard API lacks comprehensive endpoint support for downloa
 
 ## Installation
 
-1. Clone the repository:
-   git clone `https://github.com/yourusername/bamboohr-resume-downloader.git`
-   cd bamboohr-resume-downloader
+1. Clone the repository:  
+   `git clone https://github.com/yourusername/bamboohr-resume.git`  
+   `cd bamboohr-resume`
 
-2. Install the required Go dependencies:
-   go get github.com/kennygrant/sanitize
-   go get github.com/tidwall/gjson
+2. Install the required Go dependencies:  
+   `go get github.com/kennygrant/sanitize`  
+   `go get github.com/tidwall/gjson`
 
-3. Build the executable:
-   go build -o bamboo bamboo.go
+3. Build the executable:  
+   `go build -o bamboo bamboo.go`
 
 ## How to Get Your Session Cookie
 
@@ -44,12 +44,12 @@ To use this tool, you need your active BambooHR session cookie (`PHPSESSID`).
 
 You can pass your cookie via the command line or set it as an environment variable (recommended for security).
 
-**Using Environment Variable (Recommended):**
-export BAMBOO_SESSION_COOKIE="your_phpsessid_value_here"
-./bamboo -s mycompany
+**Using Environment Variable (Recommended):**  
+`export BAMBOO_SESSION_COOKIE="your_phpsessid_value_here"`  
+`./bamboo -s mycompany`
 
-**Using Command Line Flags:**
-./bamboo -c "your_phpsessid_value_here" -s mycompany
+**Using Command Line Flags:**  
+`./bamboo -c "your_phpsessid_value_here" -s mycompany`
 
 ### Flags & Options
 
@@ -65,12 +65,12 @@ export BAMBOO_SESSION_COOKIE="your_phpsessid_value_here"
 ### Examples
 
 **1. Interactive Mode (Default)**
-Fetch all "New" candidates from the US and UK. The script will present a menu asking which job roles you want to download.
-./bamboo -s mycompany -l "US,GB" -status "new"
+Fetch all "New" candidates from the US and UK. The script will present a menu asking which job roles you want to download.  
+`./bamboo -s mycompany -l "US,GB" -status "new"`
 
 **2. Fully Automated (No Menu)**
-Download all candidates currently marked as "Reviewed" for Position IDs `102` and `105`, saving them to a custom folder.
-./bamboo -s mycompany -roles "102,105" -status "reviewed" -d "/Users/Shared/HR_Downloads"
+Download all candidates currently marked as "New" for Position IDs `102` and `105`, saving them to a custom folder.  
+`./bamboo -s mycompany -roles "102,105" -status "New" -d "/Users/Shared/HR_Downloads"`
 
 ## Configuring Custom Candidate Statuses
 
@@ -90,12 +90,13 @@ BambooHR allows companies to create custom applicant tracking stages. If your sc
 
 ## Troubleshooting
 
-* **"received non-JSON response. Your session cookie may be expired or invalid"** Your `PHPSESSID` cookie has expired or was copied incorrectly. Log out of BambooHR, log back in, and grab the new cookie value.
+* **"received non-JSON response. Your session cookie may be expired or invalid"**  
+  Your `PHPSESSID` cookie has expired or was copied incorrectly. Log out of BambooHR, log back in, and grab the new cookie value.
 
-* **"No active roles found"**
+* **"No active roles found"**  
   Your account may not have permission to view active job openings, or your cookie is invalid.
 
-* **0 Candidates Downloaded**
+* **0 Candidates Downloaded**  
   Check your `-status` and `-l` filters. If a candidate doesn't have a phone number on file, they will be skipped if you have a strict location filter applied. Use `-l all` to bypass location filtering.
 
 ## Disclaimer
