@@ -20,11 +20,11 @@ Because BambooHR's standard API lacks comprehensive endpoint support for downloa
 ## Installation
 
 1. Clone the repository:  
-   `git clone https://github.com/yourusername/bamboohr-resume-downloader.git`
+   `git clone https://github.com/yourusername/bamboohr-resume-downloader.git`  
    `cd bamboohr-resume-downloader`
 
 2. Install the required Go dependencies:  
-   `go get github.com/kennygrant/sanitize`
+   `go get github.com/kennygrant/sanitize`  
    `go get github.com/tidwall/gjson`
 
 3. Build the executable:  
@@ -45,7 +45,7 @@ To use this tool, you need your active BambooHR session cookie (`PHPSESSID`).
 You can pass your cookie via the command line or set it as an environment variable (recommended for security).
 
 **Using Environment Variable (Recommended):**  
-`export BAMBOO_SESSION_COOKIE="your_phpsessid_value_here"`
+`export BAMBOO_SESSION_COOKIE="your_phpsessid_value_here"`  
 `./bamboo -s mycompany`
 
 **Using Command Line Flags:**  
