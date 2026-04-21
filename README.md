@@ -20,8 +20,8 @@ Because BambooHR's standard API lacks comprehensive endpoint support for downloa
 ## Installation
 
 1. Clone the repository:  
-   `git clone https://github.com/yourusername/bamboohr-resume-downloader.git`  
-   `cd bamboohr-resume-downloader`
+   `git clone https://github.com/yourusername/bamboohr-resume.git`  
+   `cd bamboohr-resume`
 
 2. Install the required Go dependencies:  
    `go get github.com/kennygrant/sanitize`  
@@ -69,8 +69,8 @@ Fetch all "New" candidates from the US and UK. The script will present a menu as
 `./bamboo -s mycompany -l "US,GB" -status "new"`
 
 **2. Fully Automated (No Menu)**
-Download all candidates currently marked as "Reviewed" for Position IDs `102` and `105`, saving them to a custom folder.  
-`./bamboo -s mycompany -roles "102,105" -status "reviewed" -d "/Users/Shared/HR_Downloads"`
+Download all candidates currently marked as "New" for Position IDs `102` and `105`, saving them to a custom folder.  
+`./bamboo -s mycompany -roles "102,105" -status "New" -d "/Users/Shared/HR_Downloads"`
 
 ## Configuring Custom Candidate Statuses
 

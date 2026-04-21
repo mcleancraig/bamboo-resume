@@ -1,4 +1,4 @@
-module bamboo
+module bamboo-resume
 
 go 1.26.2
 
