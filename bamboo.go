@@ -244,7 +244,7 @@ func InteractiveRolePicker(candidates []Candidate) []string {
 
 func main() {
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "BambooHR Resume Downloader (SSO/MFA Compatible)\n\n")
+		fmt.Fprintf(os.Stderr, "BambooHR Resume Downloader\n\n")
 		fmt.Fprintf(os.Stderr, "Usage: ./bamboo -c <cookie> -s <subdomain> [options]\n\n")
 		fmt.Fprintf(os.Stderr, "Required Flags:\n")
 		fmt.Fprintf(os.Stderr, "  -c string       Your PHPSESSID cookie value.\n")
